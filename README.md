@@ -3,7 +3,7 @@
 
 <p align="center">
  <h1 align="center">PREVIEW</h1>
-<img src="images/output.png" width="140px" alt="gif">
+ <img src="images/output.png" alt="output">
 </p>
 
 <h2 align="center">Environment</h2>
