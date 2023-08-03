@@ -2,10 +2,7 @@
 
 
 <p align="center">
- <h1 align="center">PREVIEW</h1>
- <div style="display: flex; justify-content: center; align-items: center">
   <img src="images/output.png" alt="output">
-</div>
 </p>
 
 <h2 align="center">Environment</h2>
