@@ -3,7 +3,7 @@
 
 <p align="center">
  <h1 align="center">PREVIEW</h1>
-![alt text](https://github.com/mejhana/faceMorpher/blob/main/images/output.png)
+<img src="images/output.png" width="140px" alt="gif">
 </p>
 
 <h2 align="center">Environment</h2>
