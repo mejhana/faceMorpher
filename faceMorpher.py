@@ -1,3 +1,4 @@
+import os
 import dlib
 import cv2
 import glob
@@ -11,13 +12,13 @@ class FaceMorpher:
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(predictor_path)
 
-    def get_landmarks(self,image, name):    
+    def get_landmarks(self,image):    
         # Detect the faces in image an get the landmarks
         # Select only a few landmarks
         # Add aditional landmarks (corners and top, bottom, left and right)
 
         rects = self.detector(image, 0)
-        
+        landmarks_points = []
         # For each detected face, find the landmark.
         for (i, rect) in enumerate(rects): 
             h,w = image.shape[:2]
@@ -64,7 +65,7 @@ class FaceMorpher:
         A = np.array([[x1,x2,x3],[y1,y2,y3],[1,1,1]])
         X = np.array([[x1_prime,x2_prime,x3_prime],[y1_prime,y2_prime,y3_prime],[1,1,1]])
 
-        T = np.matmul(A,np.linalg.inv(X))
+        T = np.matmul(A,np.linalg.pinv(X))
 
         # Iterate over all the pixels in the transformed image
         for x_prime in range(size[0]):
@@ -117,7 +118,7 @@ class FaceMorpher:
             self.morph_triangle(im, im_out,src_tri, dst_tri)
         return im_out
 
-    def morph_seq(self, total_frames, im1, im2, im1_landmarks, im2_landmarks, triangles, size):
+    def morph_seq(self, total_frames, im1, im2, im1_landmarks, im2_landmarks, triangles, start_num=0):
         # Create a smooth transition to morph the first image into the second
         im1 = np.float32(im1)
         im2 = np.float32(im2)
@@ -129,12 +130,12 @@ class FaceMorpher:
                 res = im1 
                 # Convert to PIL Image and save to the pipe stream
                 res = Image.fromarray(cv2.cvtColor(np.uint8(res), cv2.COLOR_BGR2RGB))
-                cv2.imwrite(r"images/" + str(j) + ".jpg", np.array(res))
+                cv2.imwrite(r"results/" + str(start_num+j) + ".jpg", np.array(res))
             elif weight == 1.0:
                 res = im2
                 # Convert to PIL Image and save to the pipe stream
                 res = Image.fromarray(cv2.cvtColor(np.uint8(res), cv2.COLOR_BGR2RGB))
-                cv2.imwrite(r"images/" + str(j) + ".jpg", np.array(res))
+                cv2.imwrite(r"results/" + str(start_num+j) + ".jpg", np.array(res))
             else:
                 weighted_landmarks = (1.0 - weight) * im1_landmarks + weight * im2_landmarks
                 weighted_landmarks = weighted_landmarks.astype(int)
@@ -143,16 +144,16 @@ class FaceMorpher:
 
                 blended = (1.0 - weight) * warped_im1 + weight * warped_im2
                 res = Image.fromarray(cv2.cvtColor(np.uint8(blended), cv2.COLOR_BGR2RGB))
-                cv2.imwrite(r"images/" + str(j) + ".jpg", np.array(res))
+                cv2.imwrite(r"results/" + str(start_num+j) + ".jpg", np.array(res))
         return res
 
-    def morph_pair(self, im1, im2, first_landmarks, second_landmarks, total_frames):
+    def morph_pair(self, im1, im2, first_landmarks, second_landmarks, total_frames, start_num=0):
         # for a pair of images, perform face morphing
         # Triangulate the first images and copy same triangulation to second image
         triangles = self.triangulation(first_landmarks)
 
         h, w = im1.shape[:2]
-        self.morph_seq(total_frames, im1, im2, first_landmarks, second_landmarks, triangles.tolist(), (w, h))
+        self.morph_seq(total_frames, im1, im2, first_landmarks, second_landmarks, triangles.tolist(), start_num)
 
 
 if __name__ == "__main__":
@@ -163,40 +164,65 @@ if __name__ == "__main__":
     # ask user to input the number of frames
     frames = int(input("Enter the number of frames: "))
 
-    # Read images
-    first_directory = r"images/first_img.jpeg"
-    second_directory = r"images/second_img.jpg"
+    # Read images and get the landmarks
+    facemorpher = FaceMorpher(predictor_path)
 
-    first = cv2.imread(first_directory)
-    first_rgb = cv2.cvtColor(first, cv2.COLOR_BGR2RGB)
+    timothee_chalamet = cv2.cvtColor(cv2.imread(r"input_images/timothee_chalamet.jpg"), cv2.COLOR_BGR2RGB)
+    timothee_chalamet_landmarks = facemorpher.get_landmarks(timothee_chalamet)
+    print(timothee_chalamet_landmarks)
 
-    second = cv2.imread(second_directory)
-    second_rgb = cv2.cvtColor(second, cv2.COLOR_BGR2RGB)
+    zendaya = cv2.cvtColor(cv2.imread(r"input_images/zendaya.jpg"), cv2.COLOR_BGR2RGB)
+    zendaya_landmarks = facemorpher.get_landmarks(zendaya)
 
-    # Ensure they are of the same size, else resize the images based on the biggest image
-    # resize along the width
-    if first_rgb.shape[1] > second_rgb.shape[1]:
-        second_rgb = cv2.resize(second_rgb, (first_rgb.shape[1], first_rgb.shape[0]))
-    else:
-        first_rgb = cv2.resize(first_rgb, (second_rgb.shape[1], second_rgb.shape[0]))
-    # resize along the height
-    if first_rgb.shape[0] > second_rgb.shape[0]:
-        second_rgb = cv2.resize(second_rgb, (first_rgb.shape[1], first_rgb.shape[0]))
-    else:
-        first_rgb = cv2.resize(first_rgb, (second_rgb.shape[1], second_rgb.shape[0]))
+    tom_holland = cv2.cvtColor(cv2.imread(r"input_images/tom_holland.jpg"), cv2.COLOR_BGR2RGB)
+    tom_holland_landmarks = facemorpher.get_landmarks(tom_holland)
 
-    # Get the landmarks for the first image
-    FaceMorpher = FaceMorpher(predictor_path)
-    first_landmarks = FaceMorpher.get_landmarks(np.copy(first_rgb), "first")
-    second_landmarks = FaceMorpher.get_landmarks(np.copy(second_rgb), "second")
+    adele_haenel = cv2.cvtColor(cv2.imread(r"input_images/adele_haenel.jpg"), cv2.COLOR_BGR2RGB)
+    adele_haenel_landmarks = facemorpher.get_landmarks(adele_haenel)
 
-    # FaceMorpher.morph_pair(first_rgb, second_rgb, np.array(first_landmarks), np.array(second_landmarks), frames)
+    noemie_merlant = cv2.cvtColor(cv2.imread(r"input_images/noemie_merlant.jpg"), cv2.COLOR_BGR2RGB)
+    noemie_merlant_landmarks = facemorpher.get_landmarks(noemie_merlant)
+
+    # resize all images to 256x256 pixels 
+    size = (500, 500)
+    timothee_chalamet = cv2.resize(timothee_chalamet, size, interpolation=cv2.INTER_AREA)
+    zendaya = cv2.resize(zendaya, size, interpolation=cv2.INTER_AREA)
+    tom_holland = cv2.resize(tom_holland, size, interpolation=cv2.INTER_AREA)
+    adele_haenel = cv2.resize(adele_haenel, size, interpolation=cv2.INTER_AREA)
+    noemie_merlant = cv2.resize(noemie_merlant, size, interpolation=cv2.INTER_AREA)
+
+    # create a dictionary of images and their landmarks
+    images = {"timothee_chalamet": (timothee_chalamet, timothee_chalamet_landmarks),
+                "zendaya": (zendaya, zendaya_landmarks),
+                "tom_holland": (tom_holland, tom_holland_landmarks),
+                "adele_haenel": (adele_haenel, adele_haenel_landmarks),
+                "noemie_merlant": (noemie_merlant, noemie_merlant_landmarks)}
+    
+    # take pairwise (images, landmarks) and morph them
+    for i in range(len(images)-1):
+        first = list(images.keys())[i]
+        second = list(images.keys())[i+1]
+        first_rgb, first_landmarks = images[first]
+        second_rgb, second_landmarks = images[second]
+        facemorpher.morph_pair(im1=first_rgb, 
+                               im2=second_rgb, 
+                               first_landmarks=np.array(first_landmarks), 
+                               second_landmarks=np.array(second_landmarks), 
+                               total_frames=frames,
+                               start_num=i*frames)
 
     # Create a video from the images 
     fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-    out = cv2.VideoWriter('images/face_morph.avi', fourcc, 12, (first_rgb.shape[1], first_rgb.shape[0]), isColor=True)
-    for img in sorted(glob.glob(r"images/*.jpg")):
-        img = cv2.imread(img)
+    out = cv2.VideoWriter('results/face_morph.avi', fourcc, 6, size, isColor=True)
+
+    # go through every image in results folder and write to video
+    for i in range(frames*len(images)-1):
+        img = cv2.imread(r"results/" + str(i) + ".jpg")
+        out.write(img)
+
+    # go through every image in results folder in reverse order and write to video
+    for i in range(frames*len(images)-1, 0, -1):
+        img = cv2.imread(r"results/" + str(i) + ".jpg")
         out.write(img)
 
     out.release()
