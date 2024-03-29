@@ -20,8 +20,8 @@ conda activate faceMorpher
 
 <h2 align="center">Basic Setup</h2>
 
-1. Download 2 images and put them in the images folder
-2. Change the code in faceMorpher.py (lines 167 and 168, to the names of these images) 
+1. Download a couple of images and put them in the images folder
+2. Change the code in faceMorpher.py (from line 170) to the names of these images
 
 
 
